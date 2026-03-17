@@ -38,8 +38,8 @@ public class RestControllerRecordatorio {
     // Petición para actualizar un Recordatorio
     @CrossOrigin(origins = "http://localhost:4000")
     @PostMapping(value = "actualizar", headers = "Accept=application/json")
-    public void actualizarRecordatorio(@RequestBody RecordatorioEntity RecordatorioRq) {
-        recordatorioService.actualizarRecordatorio(RecordatorioRq);
+    public void actualizarRecordatorio(@RequestBody RecordatorioEntity recordatorioRq) {
+        recordatorioService.actualizarRecordatorio(recordatorioRq);
     }
 
     @CrossOrigin(origins = "http://localhost:4000")
@@ -59,5 +59,12 @@ public class RestControllerRecordatorio {
     @DeleteMapping(value = "eliminar/{id}", headers = "Accept=application/json")
     public void eliminarRecordatorio(@PathVariable Long id) {
         recordatorioService.eliminarRecordatorio(id);
+    }
+
+    // Petición para eliminar recordatorios expirados
+    @CrossOrigin(origins = "http://localhost:4000")
+    @DeleteMapping(value = "eliminarExpirados", headers = "Accept=application/json")
+    public void eliminarRecordatorioExpirados() {
+        recordatorioService.eliminarRecordatoriosExpirados();
     }
 }

@@ -17,4 +17,5 @@ public class ProfesorDto {
     private String nombreContacto;
     private String numeroContacto;
     private List<DisponibilidadDto> disponibilidades;
+    private Boolean estado;
 }

@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.agendadeportistas.agendaservices.shared.dto.GrupoDto;
-import com.agendadeportistas.agendaservices.entities.GrupoEntity;
 import com.agendadeportistas.agendaservices.services.GrupoService;
 
 @RestController
@@ -43,7 +42,7 @@ public class RestControllerGrupo {
 
     @CrossOrigin(origins = "http://localhost:4000")
     @GetMapping(value = "listar", headers = "Accept=application/json")
-    public List<GrupoEntity> listarGrupos() {
+    public List<GrupoDto> listarGrupos() {
         return grupoService.findAll();
     }
 

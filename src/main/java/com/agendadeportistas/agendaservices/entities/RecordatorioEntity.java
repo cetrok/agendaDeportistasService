@@ -23,6 +23,7 @@ public class RecordatorioEntity {
     String titulo;
     String contenido;
     Date creado;
-    Date fechaVisible;
-    Date fechaFinVisible;
+    Date fechaRecordatorio;
+    int diasRecordatorio;
+    Boolean activo;
 }

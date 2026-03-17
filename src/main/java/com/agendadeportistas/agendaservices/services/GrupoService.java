@@ -2,6 +2,7 @@ package com.agendadeportistas.agendaservices.services;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,16 +12,23 @@ import com.agendadeportistas.agendaservices.entities.CursoEntity;
 import com.agendadeportistas.agendaservices.entities.GrupoEntity;
 import com.agendadeportistas.agendaservices.entities.ProfesorEntity;
 import com.agendadeportistas.agendaservices.entities.UbicacionEntity;
+import com.agendadeportistas.agendaservices.repositories.AgendaRepository;
 import com.agendadeportistas.agendaservices.repositories.CursoRepository;
 import com.agendadeportistas.agendaservices.repositories.GrupoRepository;
 import com.agendadeportistas.agendaservices.repositories.ProfesorRepository;
 import com.agendadeportistas.agendaservices.repositories.UbicacionRepository;
+import com.agendadeportistas.agendaservices.shared.dto.CursoDto;
 import com.agendadeportistas.agendaservices.shared.dto.GrupoDto;
+import com.agendadeportistas.agendaservices.shared.dto.ProfesorDto;
+import com.agendadeportistas.agendaservices.shared.dto.UbicacionDto;
 
 @Service
 public class GrupoService {
     @Autowired
     private GrupoRepository grupoRepository;
+
+    @Autowired
+    private AgendaRepository agendaRepository;
 
     @Autowired
     private UbicacionRepository ubicacionRepository;
@@ -69,38 +77,85 @@ public class GrupoService {
     }
 
     public GrupoEntity mapearToEntity(GrupoDto grupo) {
-        GrupoEntity grupoEntity = new GrupoEntity();
+        GrupoEntity grupoDto = new GrupoEntity();
 
-        grupoEntity.setDia(grupo.getDia());
-        grupoEntity.setHoraInicio(grupo.getHoraInicio());
-        grupoEntity.setHoraFin(grupo.getHoraFin());
-        grupoEntity.setCupos(grupo.getCupos());
+        grupoDto.setDia(grupo.getDia());
+        grupoDto.setHoraInicio(grupo.getHoraInicio());
+        grupoDto.setHoraFin(grupo.getHoraFin());
+        grupoDto.setCupos(grupo.getCupos());
 
-        grupoEntity.setUbicacion(ubicacionRepository.findById(grupo.getUbicacion().getId()).get());
-        grupoEntity.setProfesor(profesorRepository.findById(grupo.getProfesor().getId()).get());
-        grupoEntity.setCurso(cursoRepository.findById(grupo.getCurso().getIdCurso()).get());
+        grupoDto.setUbicacion(ubicacionRepository.findById(grupo.getUbicacion().getId()).get());
+        grupoDto.setProfesor(profesorRepository.findById(grupo.getProfesor().getId()).get());
+        grupoDto.setCurso(cursoRepository.findById(grupo.getCurso().getIdCurso()).get());
 
-        return grupoEntity;
+        return grupoDto;
     }
 
-    public GrupoEntity updateEntity(GrupoDto grupo, GrupoEntity grupoEntity) {
-        grupoEntity.setDia(grupo.getDia());
-        grupoEntity.setHoraInicio(grupo.getHoraInicio());
-        grupoEntity.setHoraFin(grupo.getHoraFin());
-        grupoEntity.setCupos(grupo.getCupos());
+    public GrupoEntity updateEntity(GrupoDto grupo, GrupoEntity grupoDto) {
+        grupoDto.setDia(grupo.getDia());
+        grupoDto.setHoraInicio(grupo.getHoraInicio());
+        grupoDto.setHoraFin(grupo.getHoraFin());
+        grupoDto.setCupos(grupo.getCupos());
 
-        grupoEntity.setUbicacion(ubicacionRepository.findById(grupo.getUbicacion().getId()).get());
-        grupoEntity.setProfesor(profesorRepository.findById(grupo.getProfesor().getId()).get());
-        grupoEntity.setCurso(cursoRepository.findById(grupo.getCurso().getIdCurso()).get());
+        grupoDto.setUbicacion(ubicacionRepository.findById(grupo.getUbicacion().getId()).get());
+        grupoDto.setProfesor(profesorRepository.findById(grupo.getProfesor().getId()).get());
+        grupoDto.setCurso(cursoRepository.findById(grupo.getCurso().getIdCurso()).get());
 
-        return grupoEntity;
+        return grupoDto;
     }
 
-    public List<GrupoEntity> findAll() {
-        return grupoRepository.findAll();
+    public GrupoDto mapearToDto(GrupoEntity grupoEntity) {
+        GrupoDto grupoDto = new GrupoDto();
+
+        grupoDto.setDia(grupoEntity.getDia());
+        grupoDto.setHoraInicio(grupoEntity.getHoraInicio());
+        grupoDto.setHoraFin(grupoEntity.getHoraFin());
+        grupoDto.setCupos(grupoEntity.getCupos());
+
+        // se obtienen los datos de la ubicacion del grupo
+        grupoDto.setIdGrupo(grupoEntity.getIdGrupo());
+        grupoDto.setUbicacion(ubicacionRepository.findById(grupoEntity.getUbicacion().getId())
+                .map(ubicacion -> {
+                    UbicacionDto ubicacionDto = new UbicacionDto();
+                    ubicacionDto.setId(ubicacion.getId());
+                    ubicacionDto.setNombre(ubicacion.getNombre());
+                    ubicacionDto.setDireccion(ubicacion.getDireccion());
+                    return ubicacionDto;
+                })
+                .orElseThrow(() -> new RuntimeException("Ubicacion not found")));
+        grupoDto.setProfesor(profesorRepository.findById(grupoEntity.getProfesor().getId())
+                .map(profesor -> {
+                    ProfesorDto profesorDto = new ProfesorDto();
+                    profesorDto.setId(profesor.getId());
+                    profesorDto.setNombre(profesor.getNombre());
+                    return profesorDto;
+                })
+                .orElseThrow(() -> new RuntimeException("Profesor not found")));
+        grupoDto.setCurso(cursoRepository.findById(grupoEntity.getCurso().getIdCurso())
+                .map(curso -> {
+                    CursoDto cursoDto = new CursoDto();
+                    cursoDto.setIdCurso(curso.getIdCurso());
+                    cursoDto.setNombre(curso.getNombre());
+                    cursoDto.setColor(curso.getColor());
+
+                    return cursoDto;
+                })
+                .orElseThrow(() -> new RuntimeException("Curso not found")));
+
+        return grupoDto;
     }
 
+    public List<GrupoDto> findAll() {
+        // Se mapean los grupos de entity a DTO
+        return grupoRepository.findAll()
+                .stream()
+                .map(this::mapearToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
     public void eliminarGrupo(long idGrupo) {
+        agendaRepository.deleteByGrupo_IdGrupo(idGrupo);
         grupoRepository.deleteById(idGrupo);
     }
 

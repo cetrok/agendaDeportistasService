@@ -30,6 +30,7 @@ public class ProfesorEntity {
     private String correoElectronico;
     private String nombreContacto;
     private String numeroContacto;
+    private Boolean estado;
 
     @OneToMany(mappedBy = "profesor", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DisponibilidadProfesorEntity> disponibilidades;

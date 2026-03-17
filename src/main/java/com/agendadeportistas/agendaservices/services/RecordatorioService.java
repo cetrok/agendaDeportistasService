@@ -1,5 +1,6 @@
 package com.agendadeportistas.agendaservices.services;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -24,8 +25,9 @@ public class RecordatorioService {
         RecordatorioEntity recordatorio = new RecordatorioEntity();
         recordatorio.setTitulo(recordatorioReq.getTitulo());
         recordatorio.setContenido(recordatorioReq.getContenido());
-        recordatorio.setFechaVisible(recordatorioReq.getFechaVisible());
-        recordatorio.setFechaFinVisible(recordatorioReq.getFechaFinVisible());
+        recordatorio.setFechaRecordatorio(recordatorioReq.getFechaRecordatorio());
+        recordatorio.setDiasRecordatorio(recordatorioReq.getDiasRecordatorio());
+        recordatorio.setActivo(recordatorioReq.getFechaRecordatorio().after(new Date()));
         recordatorio.setCreado(new Date());
 
         recordatorioRepository.save(recordatorio);
@@ -47,9 +49,9 @@ public class RecordatorioService {
 
         recordatorioEntity.setTitulo(recordatorioReq.getTitulo());
         recordatorioEntity.setContenido(recordatorioReq.getContenido());
-        recordatorioEntity.setFechaVisible(recordatorioReq.getFechaVisible());
-        recordatorioEntity.setFechaFinVisible(recordatorioReq.getFechaFinVisible());
-
+        recordatorioEntity.setFechaRecordatorio(recordatorioReq.getFechaRecordatorio());
+        recordatorioEntity.setDiasRecordatorio(recordatorioReq.getDiasRecordatorio());
+        recordatorioEntity.setActivo(recordatorioReq.getFechaRecordatorio().after(new Date()));
         recordatorioRepository.save(recordatorioEntity);
     }
 
@@ -59,10 +61,35 @@ public class RecordatorioService {
     }
 
     public List<RecordatorioEntity> listarRecordatoriosHoy() {
-        // Implementación de la lógica para listar todos los recordatorios visibles
+        // Implementación de la lógica para listar los recordatorios que cumplen con la
+        // regla
+        Date today = new Date();
         return recordatorioRepository.findAll().stream()
-                .filter(recordatorioEntity -> recordatorioEntity.getFechaVisible().before(new Date())
-                        && recordatorioEntity.getFechaFinVisible().after(new Date()))
+                .filter(recordatorioEntity -> {
+                    // Calculate the target date
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.setTime(recordatorioEntity.getFechaRecordatorio());
+                    Integer diasRecordatorio = Math.negateExact(recordatorioEntity.getDiasRecordatorio());
+
+                    calendar.add(Calendar.DAY_OF_MONTH, diasRecordatorio);
+
+                    // retornar si el recordatorio si la fecha calculada es menor a la fecha
+                    // de hoy y la fecha recordatorio es mayor o igual a la fecha de hoy
+                    return calendar.getTime().before(today) && recordatorioEntity.getFechaRecordatorio().after(today);
+                })
                 .toList();
     }
+
+    public void eliminarRecordatoriosExpirados() {
+        // Implementación de la lógica para marcar como inactivos los recordatorios con
+        // fecha visible anterior a hoy
+        List<RecordatorioEntity> recordatoriosExpirados = recordatorioRepository.findAll().stream()
+                .filter(recordatorio -> recordatorio.getFechaRecordatorio().before(new Date()))
+                .toList();
+        for (RecordatorioEntity recordatorio : recordatoriosExpirados) {
+            recordatorio.setActivo(false); // Asumiendo que tienes un campo 'activo' en tu entidad
+            recordatorioRepository.save(recordatorio);
+        }
+    }
+
 }
