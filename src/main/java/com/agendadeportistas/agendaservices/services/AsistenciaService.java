@@ -1,6 +1,7 @@
 package com.agendadeportistas.agendaservices.services;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,18 +24,39 @@ public class AsistenciaService {
     @Autowired
     private AgendaRepository agendaRepository;
 
+    @Autowired
+    private PaqueteClasesService paqueteClasesService;
+
     @Transactional
     public void guardarAsistencias(List<AsistenciaDto> asistencias) {
         for (AsistenciaDto dto : asistencias) {
             AgendaEntity agenda = agendaRepository.findById(dto.getAgenda().getIdAgenda())
                     .orElseThrow(() -> new RuntimeException("Agenda no encontrada"));
 
-            AsistenciaEntity entity = new AsistenciaEntity();
-            entity.setAgenda(agenda);
-            entity.setFecha(dto.getFecha());
-            entity.setAsistio(dto.isAsistio());
+            Optional<AsistenciaEntity> existente =
+                    asistenciaRepository.findByAgenda_IdAgendaAndFecha(agenda.getIdAgenda(), dto.getFecha());
 
-            asistenciaRepository.save(entity);
+            if (existente.isPresent()) {
+                AsistenciaEntity entity = existente.get();
+                boolean yaAsistio = entity.isAsistio();
+                entity.setAsistio(dto.isAsistio());
+                asistenciaRepository.save(entity);
+
+                // Descontar solo si cambia de ausente a presente
+                if (!yaAsistio && dto.isAsistio()) {
+                    paqueteClasesService.descontarClase(agenda.getDeportista().getId());
+                }
+            } else {
+                AsistenciaEntity entity = new AsistenciaEntity();
+                entity.setAgenda(agenda);
+                entity.setFecha(dto.getFecha());
+                entity.setAsistio(dto.isAsistio());
+                asistenciaRepository.save(entity);
+
+                if (dto.isAsistio()) {
+                    paqueteClasesService.descontarClase(agenda.getDeportista().getId());
+                }
+            }
         }
     }
 
