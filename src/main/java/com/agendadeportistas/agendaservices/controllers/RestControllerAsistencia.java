@@ -26,8 +26,12 @@ public class RestControllerAsistencia {
 
     @PostMapping(value = "guardar", headers = "Accept=application/json")
     public ResponseEntity<String> guardarAsistencias(@RequestBody List<AsistenciaDto> asistencias) {
-        asistenciaService.guardarAsistencias(asistencias);
-        return new ResponseEntity<>("Asistencias guardadas con éxito", HttpStatus.CREATED);
+        try {
+            asistenciaService.guardarAsistencias(asistencias);
+            return new ResponseEntity<>("Asistencias guardadas con éxito", HttpStatus.CREATED);
+        } catch (IllegalStateException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     @GetMapping(value = "listar/{fecha}", headers = "Accept=application/json")

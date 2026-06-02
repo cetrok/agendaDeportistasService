@@ -1,5 +1,6 @@
 package com.agendadeportistas.agendaservices.services;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -67,13 +68,19 @@ public class PaqueteClasesService {
     }
 
     public List<PaqueteClasesDto> obtenerDeportistasConPaqueteAgotado() {
-        Set<String> deportistasConPaqueteActivo = paqueteClasesRepository.findByActivo(true)
+        Set<String> conPaqueteActivo = paqueteClasesRepository.findByActivo(true)
                 .stream()
                 .map(p -> p.getDeportista().getId())
                 .collect(Collectors.toSet());
 
-        return paqueteClasesRepository.findByActivo(false).stream()
-                .filter(p -> !deportistasConPaqueteActivo.contains(p.getDeportista().getId()))
+        Set<String> conAlgunPaquete = paqueteClasesRepository.findAll()
+                .stream()
+                .map(p -> p.getDeportista().getId())
+                .collect(Collectors.toSet());
+
+        // Deportistas con paquete agotado (tuvieron paquete pero ya no tienen activo)
+        List<PaqueteClasesDto> agotados = paqueteClasesRepository.findByActivo(false).stream()
+                .filter(p -> !conPaqueteActivo.contains(p.getDeportista().getId()))
                 .collect(Collectors.toMap(
                         p -> p.getDeportista().getId(),
                         p -> p,
@@ -81,6 +88,45 @@ public class PaqueteClasesService {
                 ))
                 .values().stream()
                 .map(this::toDto)
+                .collect(Collectors.toList());
+
+        // Deportistas sin ningún paquete registrado
+        List<PaqueteClasesDto> sinPaquete = deportistaRepository.findAll().stream()
+                .filter(d -> !conAlgunPaquete.contains(d.getId()))
+                .map(d -> {
+                    PaqueteClasesDto dto = new PaqueteClasesDto();
+                    DeportistaLightDto deportistaDto = new DeportistaLightDto();
+                    deportistaDto.setId(d.getId());
+                    deportistaDto.setNombre(d.getNombre());
+                    dto.setDeportista(deportistaDto);
+                    dto.setIdPaquete(null);
+                    dto.setTotalClases(0);
+                    dto.setClasesRestantes(0);
+                    dto.setActivo(false);
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        List<PaqueteClasesDto> resultado = new ArrayList<>(agotados);
+        resultado.addAll(sinPaquete);
+        return resultado;
+    }
+
+    public boolean tieneActivoPaquete(String deportistaId) {
+        return paqueteClasesRepository
+                .findTopByDeportista_IdAndActivoTrueOrderByIdPaqueteDesc(deportistaId)
+                .isPresent();
+    }
+
+    public List<String> obtenerIdsSinPaqueteActivo() {
+        Set<String> conPaqueteActivo = paqueteClasesRepository.findByActivo(true)
+                .stream()
+                .map(p -> p.getDeportista().getId())
+                .collect(Collectors.toSet());
+
+        return deportistaRepository.findAll().stream()
+                .map(DeportistaEntity::getId)
+                .filter(id -> !conPaqueteActivo.contains(id))
                 .collect(Collectors.toList());
     }
 

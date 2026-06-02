@@ -39,4 +39,9 @@ public class RestControllerPaquetes {
     public List<PaqueteClasesDto> listarAgotados() {
         return paqueteClasesService.obtenerDeportistasConPaqueteAgotado();
     }
+
+    @GetMapping(value = "sinActivo", headers = "Accept=application/json")
+    public List<String> listarSinPaqueteActivo() {
+        return paqueteClasesService.obtenerIdsSinPaqueteActivo();
+    }
 }
