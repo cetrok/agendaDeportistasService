@@ -36,23 +36,33 @@ public class AsistenciaService {
             Optional<AsistenciaEntity> existente =
                     asistenciaRepository.findByAgenda_IdAgendaAndFecha(agenda.getIdAgenda(), dto.getFecha());
 
-            if (dto.isAsistio() && !paqueteClasesService.tieneActivoPaquete(agenda.getDeportista().getId())) {
-                throw new IllegalStateException(
-                        "El deportista " + agenda.getDeportista().getNombre() +
-                        " no tiene un paquete de clases activo.");
-            }
-
             if (existente.isPresent()) {
                 AsistenciaEntity entity = existente.get();
                 boolean yaAsistio = entity.isAsistio();
+
+                // Solo valida paquete si está cambiando de ausente a presente
+                if (!yaAsistio && dto.isAsistio() &&
+                        !paqueteClasesService.tieneActivoPaquete(agenda.getDeportista().getId())) {
+                    throw new IllegalStateException(
+                            "El deportista " + agenda.getDeportista().getNombre() +
+                            " no tiene un paquete de clases activo.");
+                }
+
                 entity.setAsistio(dto.isAsistio());
                 asistenciaRepository.save(entity);
 
-                // Descontar solo si cambia de ausente a presente
                 if (!yaAsistio && dto.isAsistio()) {
                     paqueteClasesService.descontarClase(agenda.getDeportista().getId());
                 }
             } else {
+                // Registro nuevo: valida paquete si se marca como presente
+                if (dto.isAsistio() &&
+                        !paqueteClasesService.tieneActivoPaquete(agenda.getDeportista().getId())) {
+                    throw new IllegalStateException(
+                            "El deportista " + agenda.getDeportista().getNombre() +
+                            " no tiene un paquete de clases activo.");
+                }
+
                 AsistenciaEntity entity = new AsistenciaEntity();
                 entity.setAgenda(agenda);
                 entity.setFecha(dto.getFecha());
